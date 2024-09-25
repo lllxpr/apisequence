@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank Interface</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .main-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 30px;
+        }
+
+        .container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 20px;
+        }
+
+        .header img {
+            height: 50px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #2c3e50;
+            margin-top: 10px;
+        }
+
+        .auth-input {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .auth-input label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        .auth-input input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .auth-input button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+
+        .auth-input button:hover {
+            background-color: #2980b9;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+
+        li a {
+            text-decoration: none;
+            color: #3498db;
+            font-size: 18px;
+            display: block;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        li a:hover {
+            color: #2980b9;
+        }
+
+        #error-message {
+            margin-top: 20px;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        #content {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        /* New rules container */
+        .rules-container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            padding: 20px;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .rules-container h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .rules-container ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .rules-container ul li {
+            margin-bottom: 10px;
+        }
+
+        .rules-container ul li span {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="container">
+            <div class="header">
+                <img src="https://www.commbank.com.au/content/dam/caas/newsroom/images/logo_evolution_newsroom_1.png" alt="Bank Logo">
+                <h1>Welcome to Jamal's Demo Bank</h1>
+            </div>
+            <div class="auth-input">
+                <label for="auth-token">Authorization Token:</label>
+                <input type="text" id="auth-token" placeholder="Enter your token">
+                <button id="save-auth">Save Token</button>
+            </div>
+            <ul>
+                <li><a href="#" id="account-link">GET /users/jamal/accounts</a></li>
+                <li><a href="#" id="balance-link">GET /accounts/2048/balance</a></li>
+                <li><a href="#" id="transfer-link">POST /transfer?from=1515&to=2048</a></li>
+            </ul>
+            <div id="content"></div>
+            <div id="error-message"></div>
+        </div>
+
+        <!-- New rules container -->
+        <div class="rules-container">
+            <h2>APIs Sequence Rules</h2>
+            <ul>
+                <li><span>Rule 1</span>: Allow & Block others</li>
+                <li>GET /user → GET /accounts</li>
+                <li><span>Rule 2</span>: Allow & Block others</li>
+                <li>GET /accounts → POST /transfer</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let authToken = localStorage.getItem('authToken') || '';
+
+        document.getElementById('save-auth').addEventListener('click', () => {
+            authToken = document.getElementById('auth-token').value;
+            localStorage.setItem('authToken', authToken);
+            alert('Authorization token saved!');
+        });
+
+        async function handleApiCall(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers: { 'Authorization': `Bearer ${authToken}`, ...options.headers }
+                });
+                if (response.status === 403) {
+                    throw new Error('403 Forbidden: You do not have permission to access this resource.');
+                } else if (!response.ok) {
+                    throw new Error(`Error: ${response.status} ${response.statusText}`);
+                }
+                const data = await response.json();
+                document.getElementById('error-message').textContent = '';  // Clear any previous error
+                return data;
+            } catch (error) {
+                document.getElementById('error-message').textContent = error.message;
+            }
+        }
+
+        document.getElementById('account-link').addEventListener('click', async () => {
+            const data = await handleApiCall('/users/jamal/accounts');
+            if (data) {
+                document.getElementById('content').innerHTML = `
+                    <p>Name: ${data.name}</p>
+                    <p>Address: ${data.address}</p>
+                    <p>Bank Name: ${data.bankName}</p>
+                    <p>Account Number: ${data.accountNumber}</p>
+                `;
+            }
+        });
+
+        document.getElementById('balance-link').addEventListener('click', async () => {
+            const data = await handleApiCall('/accounts/2048/balance');
+            if (data) {
+                document.getElementById('content').innerHTML = `
+                    <p>Name: ${data.name}</p>
+                    <p>Address: ${data.address}</p>
+                    <p>Bank Name: ${data.bankName}</p>
+                    <p>Account Number: ${data.accountNumber}</p>
+                    <p>Balance: ${data.balance}</p>
+                `;
+            }
+        });
+
+        document.getElementById('transfer-link').addEventListener('click', async () => {
+            const data = await handleApiCall('/transfer?from=1515&to=2048', { method: 'POST' });
+            if (data) {
+                document.getElementById('content').innerHTML = `
+                    <p>Source Account: ${data.sourceAccount}</p>
+                    <p>Destination Account: ${data.destinationAccount}</p>
+                    <p>Amount: ${data.amount}</p>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
